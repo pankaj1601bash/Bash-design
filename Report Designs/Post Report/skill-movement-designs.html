@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Movement — Design Options · bash.ai</title>
+<style>
+  html, body { margin: 0; }
+  .theme-toggle { position: fixed; top: 14px; right: 14px; z-index: 20;
+    font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    background: var(--card); color: var(--ink-soft); border: 1px solid var(--sand-line);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeBtn" aria-label="Toggle light or dark theme">◐ Theme</button>
+<style>
+  :root {
+    --sand-bg: #FBF8F1; --card: #FFFFFF; --sand-track: #F5EFE3; --sand-line: #E8E0D0;
+    --ink: #1C1B18; --ink-soft: #5A554D; --ink-mute: #918B81;
+    --green: #2D8B55; --green-soft: #E8F5EE; --red: #C44A3F; --red-soft: #FBEAEA;
+    --amber: #C48A1A; --amber-soft: #FDF5E6; --accent: #C44A3F;
+    --radius: 12px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sand-bg: #16130E; --card: #211D16; --sand-track: #2A251C; --sand-line: #38311F;
+      --ink: #F3EEE3; --ink-soft: #C9C1B2; --ink-mute: #8C8677;
+      --green: #5CC183; --green-soft: #17301F; --red: #E5776B; --red-soft: #331917;
+      --amber: #DBB255; --amber-soft: #2E2410;
+    }
+  }
+  :root[data-theme="light"] {
+    --sand-bg: #FBF8F1; --card: #FFFFFF; --sand-track: #F5EFE3; --sand-line: #E8E0D0;
+    --ink: #1C1B18; --ink-soft: #5A554D; --ink-mute: #918B81;
+    --green: #2D8B55; --green-soft: #E8F5EE; --red: #C44A3F; --red-soft: #FBEAEA;
+    --amber: #C48A1A; --amber-soft: #FDF5E6;
+  }
+  :root[data-theme="dark"] {
+    --sand-bg: #16130E; --card: #211D16; --sand-track: #2A251C; --sand-line: #38311F;
+    --ink: #F3EEE3; --ink-soft: #C9C1B2; --ink-mute: #8C8677;
+    --green: #5CC183; --green-soft: #17301F; --red: #E5776B; --red-soft: #331917;
+    --amber: #DBB255; --amber-soft: #2E2410;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--sand-bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 72px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; line-height: 1.15; margin: 8px 0 6px; letter-spacing: -0.02em; text-wrap: balance; }
+  .sub { color: var(--ink-soft); font-size: 15px; max-width: 64ch; margin: 0; }
+  h2 { font-size: 13px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-mute); margin: 0 0 4px; }
+  section { margin-top: 40px; }
+  code { font-family: var(--mono); font-size: 0.92em; background: var(--sand-track); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+
+  .card { background: var(--card); border: 1px solid var(--sand-line); border-radius: var(--radius); padding: 22px; }
+
+  /* design switcher */
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--sand-track); padding: 4px; border-radius: 11px; margin-bottom: 18px; }
+  .tabs button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    border: none; background: transparent; color: var(--ink-mute); padding: 8px 14px; border-radius: 8px; cursor: pointer; flex: 1 1 auto;
+  }
+  .tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .panel { display: none; }
+  .panel.show { display: block; }
+  .panel-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 4px; }
+  .panel-head .name { font-size: 17px; font-weight: 600; }
+  .verdict { font-family: var(--mono); font-size: 10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding: 3px 9px; border-radius: 6px; }
+  .verdict.pick { background: var(--green-soft); color: var(--green); }
+  .verdict.alt { background: var(--amber-soft); color: var(--amber); }
+  .verdict.now { background: var(--sand-track); color: var(--ink-mute); }
+  .panel-why { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; max-width: 70ch; }
+
+  /* radar */
+  .radar-card { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  @media (min-width: 780px) { .radar-card { grid-template-columns: 1.3fr 1fr; align-items: center; } }
+  .radar-stage { width: 100%; overflow-x: auto; }
+  svg.radar { width: 100%; height: auto; display: block; }
+  .axis-label { font-size: 10.5px; fill: var(--ink-soft); }
+  .axis-label.demoed { fill: var(--green); font-weight: 600; }
+  .axis-label.gap { fill: var(--red); }
+  .ring-label { font-family: var(--mono); font-size: 8.5px; fill: var(--ink-mute); }
+  .legend { display: flex; flex-direction: column; gap: 13px; }
+  .legend-row { display: flex; gap: 11px; align-items: flex-start; }
+  .swatch { width: 26px; height: 14px; border-radius: 3px; flex-shrink: 0; margin-top: 3px; }
+  .legend-row .t { font-size: 13.5px; font-weight: 600; }
+  .legend-row .d { font-size: 12px; color: var(--ink-mute); }
+  .hoverbox { min-height: 40px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sand-line); font-size: 12.5px; color: var(--ink-soft); }
+  .hoverbox b { color: var(--ink); }
+
+  /* generic row chart (dumbbell / bullet / diverging / ghost) */
+  .rows { display: flex; flex-direction: column; gap: 2px; }
+  .row { display: grid; grid-template-columns: 132px 1fr 78px; gap: 12px; align-items: center; padding: 6px 0; }
+  .row .rname { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .rname.nd { color: var(--ink-mute); }
+  .row .val { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+  .track { position: relative; height: 22px; }
+  .axis-scale { display:grid; grid-template-columns: 132px 1fr 78px; gap:12px; font-family:var(--mono); font-size:9px; color:var(--ink-mute); margin-bottom:4px; }
+  .axis-scale .ticks { display:flex; justify-content:space-between; }
+
+  /* dumbbell */
+  .db-line { position:absolute; top:50%; height:3px; transform:translateY(-50%); border-radius:2px; }
+  .db-dot { position:absolute; top:50%; width:12px; height:12px; border-radius:50%; transform:translate(-50%,-50%); }
+  .db-dot.exp { background: var(--card); border:2px solid var(--ink-mute); }
+  .db-dot.dem { border:2px solid var(--card); }
+
+  /* bullet */
+  .bl-track { position:absolute; top:50%; left:0; right:0; height:8px; transform:translateY(-50%); background:var(--sand-track); border-radius:99px; }
+  .bl-fill { position:absolute; top:50%; left:0; height:8px; transform:translateY(-50%); border-radius:99px; }
+  .bl-target { position:absolute; top:50%; width:3px; height:18px; transform:translate(-50%,-50%); background:var(--ink); border-radius:2px; }
+
+  /* diverging */
+  .dv-mid { position:absolute; top:0; bottom:0; width:1px; background:var(--sand-line); }
+  .dv-bar { position:absolute; top:50%; height:12px; transform:translateY(-50%); border-radius:3px; }
+
+  /* ghost bars */
+  .gh-ghost { position:absolute; top:50%; left:0; right:0; height:7px; transform:translateY(-50%); background:var(--sand-track); border-radius:99px; }
+  .gh-ghost-fill { position:absolute; top:50%; left:0; height:7px; transform:translateY(-50%); border-radius:99px; opacity:.28; }
+  .gh-fill { position:absolute; top:50%; left:0; height:7px; transform:translateY(-50%); border-radius:99px; }
+
+  /* legend for row charts */
+  .rlegend { display:flex; gap:20px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--sand-line); font-size:12px; color:var(--ink-soft); }
+  .rlegend span { display:inline-flex; align-items:center; gap:7px; }
+  .dot { width:11px;height:11px;border-radius:50%;display:inline-block; }
+  .bar-key { width:16px;height:8px;border-radius:99px;display:inline-block; }
+
+  /* notes + plan */
+  .note-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 700px) { .note-grid { grid-template-columns: 1fr 1fr; } }
+  .note { background: var(--card); border: 1px solid var(--sand-line); border-radius: 10px; padding: 16px 18px; }
+  .note.warn { border-left: 3px solid var(--amber); }
+  .note.good { border-left: 3px solid var(--green); }
+  .note h3 { margin: 0 0 6px; font-size: 14px; }
+  .note p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+  table.cmp { width:100%; border-collapse: collapse; font-size: 13px; }
+  table.cmp th, table.cmp td { text-align:left; padding: 10px 12px; border-bottom: 1px solid var(--sand-line); }
+  table.cmp th { font-family: var(--mono); font-size: 10px; text-transform:uppercase; letter-spacing:0.08em; color: var(--ink-mute); font-weight:600; }
+  table.cmp td:first-child { font-weight:600; }
+  .tag { font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:5px; }
+  .tag.y { background:var(--green-soft); color:var(--green); }
+  .tag.n { background:var(--red-soft); color:var(--red); }
+  .tag.m { background:var(--amber-soft); color:var(--amber); }
+</style>
+
+<div class="wrap">
+  <span class="eyebrow">Match Day Report · Design Options</span>
+  <h1>Skill Movement — 6 Ways To Show It</h1>
+  <p class="sub">Every option plots the same real payload: what the role <b>expected</b> (<code>kitWeightedScore</code>) vs what the candidate <b>demonstrated</b> (<code>score</code>), on a 0–10 scale. Flip between designs to compare. Current bars are the last tab.</p>
+
+  <section>
+    <div class="tabs" role="tablist" aria-label="Design options">
+      <button role="tab" aria-selected="true"  data-p="radar">Radar</button>
+      <button role="tab" aria-selected="false" data-p="dumbbell">Dumbbell ★</button>
+      <button role="tab" aria-selected="false" data-p="bullet">Bullet</button>
+      <button role="tab" aria-selected="false" data-p="diverging">Diverging</button>
+      <button role="tab" aria-selected="false" data-p="ghost">Ghost bars</button>
+      <button role="tab" aria-selected="false" data-p="current">Current</button>
+    </div>
+
+    <!-- RADAR -->
+    <div class="panel show card" id="p-radar">
+      <div class="panel-head"><span class="name">Radar / spider</span><span class="verdict alt">Best for a pitch</span></div>
+      <p class="panel-why">Two overlaid polygons — expected outline vs demonstrated fill. Shape reads as a verdict instantly. Weakness: needs axis filtering (drops <code>kit 0</code>), exact numbers hard to read past ~10 skills.</p>
+      <div class="radar-card" id="radarCard">
+        <div class="radar-stage"><svg class="radar" id="svg" viewBox="0 0 520 480" role="img" aria-label="Skill radar"></svg></div>
+        <div>
+          <div class="legend">
+            <div class="legend-row"><span class="swatch" style="background:var(--ink-mute);opacity:.35;border:1px solid var(--ink-mute)"></span><div><div class="t">Expected by role</div><div class="d">Outer dashed. <code>kitWeightedScore</code>.</div></div></div>
+            <div class="legend-row"><span class="swatch" style="background:var(--red);opacity:.45"></span><div><div class="t">Demonstrated</div><div class="d">Filled. <code>score</code>.</div></div></div>
+          </div>
+          <div class="hoverbox" id="hover">Hover a point to inspect a skill.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUMBBELL -->
+    <div class="panel card" id="p-dumbbell">
+      <div class="panel-head"><span class="name">Dumbbell / connected dots</span><span class="verdict pick">Recommended</span></div>
+      <p class="panel-why">One row per skill. Hollow dot = expected, filled dot = demonstrated, connector = the gap (red when short). Scales to all 20 skills, exact values readable, "not discussed" sits naturally at 0. Best signal-per-pixel.</p>
+      <div class="axis-scale"><span></span><div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div><span></span></div>
+      <div class="rows" id="rows-dumbbell"></div>
+      <div class="rlegend">
+        <span><span class="dot" style="background:var(--card);border:2px solid var(--ink-mute)"></span> Expected (kit)</span>
+        <span><span class="dot" style="background:var(--red)"></span> Demonstrated (score)</span>
+        <span><span class="dot" style="background:var(--green)"></span> Met / exceeded</span>
+      </div>
+    </div>
+
+    <!-- BULLET -->
+    <div class="panel card" id="p-bullet">
+      <div class="panel-head"><span class="name">Bullet chart</span><span class="verdict alt">Densest · best for print</span></div>
+      <p class="panel-why">Bar = demonstrated <code>score</code>, vertical tick = expected <code>kit</code> target. Cleared when the bar passes the tick. Most compact — ideal for the PDF export where vertical space is tight.</p>
+      <div class="axis-scale"><span></span><div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div><span></span></div>
+      <div class="rows" id="rows-bullet"></div>
+      <div class="rlegend">
+        <span><span class="bar-key" style="background:var(--red)"></span> Demonstrated bar</span>
+        <span><span style="width:3px;height:14px;background:var(--ink);display:inline-block;border-radius:2px"></span> Expected target</span>
+      </div>
+    </div>
+
+    <!-- DIVERGING -->
+    <div class="panel card" id="p-diverging">
+      <div class="panel-head"><span class="name">Diverging from baseline</span><span class="verdict alt">Most dramatic</span></div>
+      <p class="panel-why">Center line = the expectation. Bar grows <b>left</b> when under-delivered, <b>right</b> when exceeded. This candidate is an all-left red wall — inflation is impossible to miss. Least precise on absolute values.</p>
+      <div class="rows" id="rows-diverging"></div>
+      <div class="rlegend">
+        <span><span class="bar-key" style="background:var(--red)"></span> Below expected</span>
+        <span><span class="bar-key" style="background:var(--green)"></span> Above expected</span>
+        <span>Center = <code>kitWeightedScore</code></span>
+      </div>
+    </div>
+
+    <!-- GHOST BARS -->
+    <div class="panel card" id="p-ghost">
+      <div class="panel-head"><span class="name">Ghost bars</span><span class="verdict alt">Smallest change</span></div>
+      <p class="panel-why">Keeps today's bar list, adds a faint full "expected" track behind each fill. One CSS tweak on the current component — gives the missing baseline without a redesign.</p>
+      <div class="axis-scale"><span></span><div class="ticks"><span>0</span><span></span><span></span><span></span><span></span><span>10</span></div><span></span></div>
+      <div class="rows" id="rows-ghost"></div>
+      <div class="rlegend">
+        <span><span class="bar-key" style="background:var(--sand-track)"></span> Expected track</span>
+        <span><span class="bar-key" style="background:var(--red)"></span> Demonstrated fill</span>
+      </div>
+    </div>
+
+    <!-- CURRENT -->
+    <div class="panel card" id="p-current">
+      <div class="panel-head"><span class="name">Current implementation</span><span class="verdict now">Live today</span></div>
+      <p class="panel-why">One bar per skill, single value (<code>score</code>), no expected baseline. The reader can't see the gap — only that a skill is "inflated". Shown for comparison.</p>
+      <div class="rows" id="rows-current" style="gap:10px"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>At a glance</h2>
+    <div style="overflow-x:auto" class="card" >
+      <table class="cmp">
+        <thead><tr><th>Design</th><th>Shows the gap</th><th>Exact values</th><th>Handles 20 skills</th><th>Print / PDF</th><th>Build cost</th></tr></thead>
+        <tbody>
+          <tr><td>Radar</td><td><span class="tag y">yes</span></td><td><span class="tag n">weak</span></td><td><span class="tag m">filter</span></td><td><span class="tag m">ok</span></td><td>SVG, ~60 ln</td></tr>
+          <tr><td>Dumbbell ★</td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td>HTML/CSS</td></tr>
+          <tr><td>Bullet</td><td><span class="tag y">yes</span></td><td><span class="tag m">ok</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">best</span></td><td>HTML/CSS</td></tr>
+          <tr><td>Diverging</td><td><span class="tag y">yes</span></td><td><span class="tag n">weak</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td>HTML/CSS</td></tr>
+          <tr><td>Ghost bars</td><td><span class="tag m">rough</span></td><td><span class="tag m">ok</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td>1 CSS tweak</td></tr>
+          <tr><td>Current</td><td><span class="tag n">no</span></td><td><span class="tag m">ok</span></td><td><span class="tag y">yes</span></td><td><span class="tag y">yes</span></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data notes (apply to all)</h2>
+    <div class="note-grid">
+      <div class="note warn"><h3>11 skills are "not discussed"</h3><p>They have <code>score 0</code>. Row charts show them at 0 honestly; radar drops them. Keep the existing "N not discussed" collapse row either way.</p></div>
+      <div class="note warn"><h3>4 skills demoed but not required</h3><p>System Design, TypeScript, Socket.io, Redis: <code>score 4, kit 0</code>. No expected baseline — show as an "extra skills shown" chip line, not in the main chart.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // ── Real payload: data.evidencePackData.skillScores ──
+  const RAW = [
+    {skill:"Node.js",score:4,kit:8,level:"inflated"},
+    {skill:"Express.js",score:4,kit:8,level:"inflated"},
+    {skill:"PostgreSQL",score:4,kit:7,level:"inflated"},
+    {skill:"REST API",score:4,kit:7,level:"inflated"},
+    {skill:"MongoDB",score:4,kit:6,level:"inflated"},
+    {skill:"Postman",score:0,kit:6,level:"not mentioned"},
+    {skill:"Agile methods",score:0,kit:6,level:"not mentioned"},
+    {skill:"Front-end tech",score:0,kit:6,level:"not mentioned"},
+    {skill:"Automated testing",score:0,kit:6,level:"not mentioned"},
+    {skill:"Unit tests",score:0,kit:6,level:"not mentioned"},
+    {skill:"Code versioning",score:0,kit:6,level:"not mentioned"},
+    {skill:"English",score:0,kit:6,level:"not mentioned"},
+    {skill:"Solidity",score:0,kit:5,level:"not mentioned"},
+    {skill:"System Design",score:4,kit:0,level:"inflated"},
+    {skill:"TypeScript",score:4,kit:0,level:"inflated"},
+    {skill:"Socket.io",score:4,kit:0,level:"inflated"},
+    {skill:"Redis",score:4,kit:0,level:"inflated"},
+  ];
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const pct = v => Math.max(0, Math.min(100, v*10));
+  const met = s => s.score >= s.kit && s.kit > 0;
+
+  // rows used by bar-style charts (skip pure 0/0), sorted by gap desc
+  const ROWS = RAW.filter(s => s.kit>0 || s.score>0).slice().sort((a,b)=>(b.kit-b.score)-(a.kit-a.score));
+
+  // ── RADAR ──
+  const plotted = RAW.filter(s => s.kit > 0);
+  const CX=260, CY=232, R=158, MAX=10;
+  const ang = i => -Math.PI/2 + i*(2*Math.PI/plotted.length);
+  const pt = (i,v)=>[CX+(R*v/MAX)*Math.cos(ang(i)), CY+(R*v/MAX)*Math.sin(ang(i))];
+  function drawRadar(){
+    const RED=css('--red'), MUTE=css('--ink-mute'), LINE=css('--sand-line');
+    let g="";
+    [2,4,6,8,10].forEach(rv=>{ g+=`<polygon points="${plotted.map((_,i)=>pt(i,rv).join(",")).join(" ")}" fill="none" stroke="${LINE}" stroke-width="1"/>`; });
+    g+=`<text class="ring-label" x="${CX+3}" y="${CY-R+2}">10</text><text class="ring-label" x="${CX+3}" y="${CY-R*0.6+2}">6</text>`;
+    plotted.forEach((s,i)=>{
+      const [ex,ey]=pt(i,MAX); g+=`<line x1="${CX}" y1="${CY}" x2="${ex}" y2="${ey}" stroke="${LINE}" stroke-width="1"/>`;
+      const [lx,ly]=pt(i,MAX+1.35); const a=ang(i);
+      let anchor = Math.cos(a)>0.25?"start":Math.cos(a)<-0.25?"end":"middle";
+      const cls = met(s)?"demoed":(s.score===0?"gap":"");
+      g+=`<text class="axis-label ${cls}" x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle">${s.skill}</text>`;
+    });
+    g+=`<polygon points="${plotted.map((_,i)=>pt(i,plotted[i].kit).join(",")).join(" ")}" fill="${MUTE}" fill-opacity="0.12" stroke="${MUTE}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    g+=`<polygon points="${plotted.map((_,i)=>pt(i,plotted[i].score).join(",")).join(" ")}" fill="${RED}" fill-opacity="0.28" stroke="${RED}" stroke-width="2"/>`;
+    plotted.forEach((s,i)=>{ const [x,y]=pt(i,s.score); g+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent" tabindex="0" data-i="${i}" style="cursor:pointer"/><circle cx="${x}" cy="${y}" r="3.5" fill="${RED}" pointer-events="none"/>`; });
+    document.getElementById('svg').innerHTML=g;
+    const hv=document.getElementById('hover');
+    document.querySelectorAll('#svg circle[data-i]').forEach(c=>{ const s=plotted[c.dataset.i];
+      const show=()=>hv.innerHTML=`<b>${s.skill}</b> — expected <b>${s.kit}</b>/10, demonstrated <b style="color:${css('--red')}">${s.score}</b>/10 · gap ${s.kit-s.score}`;
+      c.addEventListener('mouseenter',show); c.addEventListener('focus',show); });
+  }
+
+  const nameCell = s => `<div class="rname ${s.score===0?'nd':''}" title="${s.skill}">${s.skill}</div>`;
+
+  // ── DUMBBELL ──
+  function drawDumbbell(){
+    document.getElementById('rows-dumbbell').innerHTML = ROWS.map(s=>{
+      const good = met(s); const dem = good?css('--green'):css('--red');
+      return `<div class="row">${nameCell(s)}
+        <div class="track">
+          <div class="db-line" style="left:${pct(Math.min(s.score,s.kit))}%; width:${Math.abs(pct(s.kit)-pct(s.score))}%; background:${good?css('--green'):css('--red')}; opacity:.5"></div>
+          <div class="db-dot exp" style="left:${pct(s.kit)}%"></div>
+          <div class="db-dot dem" style="left:${pct(s.score)}%; background:${dem}"></div>
+        </div>
+        <div class="val">${s.score} → ${s.kit}</div></div>`;
+    }).join("");
+  }
+
+  // ── BULLET ──
+  function drawBullet(){
+    document.getElementById('rows-bullet').innerHTML = ROWS.map(s=>{
+      const good = met(s);
+      return `<div class="row">${nameCell(s)}
+        <div class="track">
+          <div class="bl-track"></div>
+          <div class="bl-fill" style="width:${pct(s.score)}%; background:${good?css('--green'):css('--red')}"></div>
+          ${s.kit>0?`<div class="bl-target" style="left:${pct(s.kit)}%"></div>`:''}
+        </div>
+        <div class="val">${s.score} / ${s.kit||'–'}</div></div>`;
+    }).join("");
+  }
+
+  // ── DIVERGING ── (center = expected; bar = score-kit, scaled ±10)
+  function drawDiverging(){
+    document.getElementById('rows-diverging').innerHTML = ROWS.map(s=>{
+      const d = s.score - s.kit;            // negative = under
+      const half = Math.abs(d)/MAX*50;      // % of half-width
+      const below = d < 0;
+      const bar = below
+        ? `<div class="dv-bar" style="right:50%; width:${half}%; background:${css('--red')}"></div>`
+        : `<div class="dv-bar" style="left:50%; width:${half}%; background:${css('--green')}"></div>`;
+      return `<div class="row">${nameCell(s)}
+        <div class="track"><div class="dv-mid" style="left:50%"></div>${d!==0?bar:''}</div>
+        <div class="val">${d>0?'+':''}${d}</div></div>`;
+    }).join("");
+  }
+
+  // ── GHOST BARS ──
+  function drawGhost(){
+    document.getElementById('rows-ghost').innerHTML = ROWS.map(s=>{
+      const good = met(s);
+      return `<div class="row">${nameCell(s)}
+        <div class="track">
+          <div class="gh-ghost"></div>
+          <div class="gh-ghost-fill" style="width:${pct(s.kit)}%; background:${css('--ink-mute')}"></div>
+          <div class="gh-fill" style="width:${pct(s.score)}%; background:${good?css('--green'):css('--red')}"></div>
+        </div>
+        <div class="val">${s.score} / ${s.kit||'–'}</div></div>`;
+    }).join("");
+  }
+
+  // ── CURRENT (bars, single value) ──
+  function drawCurrent(){
+    document.getElementById('rows-current').innerHTML = RAW.filter(s=>s.score>0||s.kit>0).slice(0,9).map(s=>`
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:500">${s.skill}</span>
+          <span class="tag ${s.level==='inflated'?'n':'m'}">${s.level==='inflated'?'Inflated':'Not discussed'}</span>
+        </div>
+        <div class="bl-track" style="position:relative;height:6px"></div>
+        <div style="position:relative;height:0"><div style="position:absolute;top:-6px;height:6px;border-radius:99px;width:${pct(s.score)}%;background:var(--red)"></div></div>
+        <div style="font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-top:5px">${s.score>0?'weak evidence':'not discussed'}</div>
+      </div>`).join("");
+  }
+
+  function drawAll(){ drawRadar(); drawDumbbell(); drawBullet(); drawDiverging(); drawGhost(); drawCurrent(); }
+  drawAll();
+
+  // tabs
+  const tabs=[...document.querySelectorAll('.tabs button')];
+  tabs.forEach(b=>b.addEventListener('click',()=>{
+    tabs.forEach(x=>x.setAttribute('aria-selected', x===b));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('show', p.id==='p-'+b.dataset.p));
+  }));
+
+  // redraw on theme change (colors come from CSS vars)
+  const mo=new MutationObserver(drawAll); mo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+</script>
+<script>
+  document.getElementById('themeBtn').onclick = function(){
+    var cur = document.documentElement.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  };
+</script>
+</body>
+</html>
