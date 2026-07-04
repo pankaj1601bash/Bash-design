@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bash Design Pages</title>
+<style>
+  :root {
+    --bg: #f5efe6;
+    --panel: #fffaf2;
+    --line: #dfd3c2;
+    --text: #211c16;
+    --muted: #6c6256;
+    --accent: #9f3d2e;
+    --accent-2: #2a7b57;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top, #fffaf1 0%, transparent 42%),
+      linear-gradient(180deg, #efe4d3 0%, var(--bg) 100%);
+  }
+
+  .wrap {
+    width: min(960px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 56px 0 72px;
+  }
+
+  .hero {
+    margin-bottom: 28px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    margin: 0 0 12px;
+    font-size: clamp(2rem, 5vw, 3.75rem);
+    line-height: 1;
+  }
+
+  .sub {
+    max-width: 56ch;
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+
+  .grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  .card {
+    background: color-mix(in srgb, var(--panel) 94%, white);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 40px rgba(65, 44, 24, 0.07);
+  }
+
+  .card h2 {
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+  }
+
+  .card p {
+    margin: 0 0 18px;
+    color: var(--muted);
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  a.button {
+    display: inline-block;
+    padding: 12px 16px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  a.button.primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  a.button.secondary {
+    background: transparent;
+    color: var(--accent-2);
+    border: 1px solid color-mix(in srgb, var(--accent-2) 35%, white);
+  }
+
+  .meta {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .meta div {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--line);
+  }
+
+  .meta strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+  }
+
+  code {
+    font-family: Consolas, monospace;
+    background: rgba(34, 28, 22, 0.06);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+
+  @media (max-width: 640px) {
+    .wrap { width: min(960px, calc(100% - 24px)); padding-top: 32px; }
+    .card { padding: 18px; border-radius: 18px; }
+  }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <span class="eyebrow">GitHub Pages Ready</span>
+      <h1>Bash Design Pages</h1>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Available page</h2>
+        <p>The current design page stays in its own file and is linked from here.</p>
+        <div class="actions">
+          <a class="button primary" href="./Report%20Designs/Post%20Report/skill-movement-designs.html">Open Skill Movement Design Options</a>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
