@@ -17,9 +17,7 @@ This repository is ready to publish as a static site with GitHub Pages.
 5. Set `Branch` to `main` and folder to `/ (root)`.
 6. Save and wait a minute or two.
 
-Your site URL will be:
-
-`https://YOUR-USERNAME.github.io/REPO-NAME/`
+Your site URL will be visible on the Github -> Setting -> Pages
 
 ## Suggested git commands
 
